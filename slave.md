@@ -68,3 +68,51 @@ This guide will walk you through attaching an AWS EC2 instance (assuming a Linux
 *   **Connection Timeout:** If Jenkins cannot reach the host, double-check your AWS Security Group to ensure port 22 is open to your laptop's public IP. Also, check if your Windows Firewall or router is blocking outgoing connections to port 22 (less common).
 *   **Authentication Failed:** Double-check the username (`ec2-user`, `ubuntu`, etc.) and that the private key is pasted correctly without any missing characters.
 *   **Java Not Found:** Ensure Java is installed on the EC2 instance and is available in the system PATH. You can specify the exact Java path in the "Advanced" settings of the Launch method if needed.
+
+## Step 5: Test the Slave Node
+
+Now that the slave is online, you can test it by running a simple Jenkins job on it.
+
+### Option A: Testing with a Freestyle Project
+
+1.  From the Jenkins dashboard, click **New Item**.
+2.  Enter a name like `Test-EC2-Slave`, select **Freestyle project**, and click **OK**.
+3.  In the configuration page, scroll down to the **General** tab.
+4.  Check the box for **Restrict where this project can be run**.
+5.  In the **Label Expression** field, type the label you gave your node (e.g., `linux` or `ec2` or exactly `AWS-EC2-Slave`). You should see a message saying "Label is serviced by 1 node".
+6.  Scroll down to the **Build Steps** section.
+7.  Click **Add build step** and select **Execute shell** (since the slave is a Linux EC2 instance).
+8.  In the Command box, enter simple Linux commands to verify:
+    ```bash
+    echo "Hello from EC2 Slave!"
+    hostname
+    uname -a
+    pwd
+    ```
+9.  Click **Save**.
+10. Click **Build Now** on the left menu.
+11. Once the build finishes, click the green checkmark next to the build number under "Build History", then click **Console Output**. You should see the output of your commands executed on the EC2 instance!
+
+### Option B: Testing with a Pipeline
+
+If you prefer using Jenkins Pipelines, here is a simple script to test:
+
+1.  Create a **New Item** -> **Pipeline** -> named `Test-Pipeline`.
+2.  Scroll down to the **Pipeline** section and enter the following script:
+    ```groovy
+    pipeline {
+        agent {
+            label 'linux' // Replace 'linux' with the label you assigned to the node
+        }
+        stages {
+            stage('Test EC2 Connection') {
+                steps {
+                    sh 'echo "Hello from Pipeline on EC2!"'
+                    sh 'hostname'
+                    sh 'uptime'
+                }
+            }
+        }
+    }
+    ```
+3.  Click **Save** and **Build Now**. Check the logs of the "Test EC2 Connection" stage to verify the output.
